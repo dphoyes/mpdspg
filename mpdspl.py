@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+import os
 import argparse
 import yaml
 import pathlib
@@ -97,26 +98,28 @@ class LabelAccessor(DbAccessor):
         all_tracks_by_path = self.__all_tracks_by_path
         music_root = pathlib.Path(self._mpd.config())
         label_found = False
-        yml_file_name = f'.label.{arg}.yml'
-        for tag_file in music_root.rglob(yml_file_name):
-            with open(tag_file) as f:
-                tag_file_content = yaml.safe_load(f)
+
+        for current_dir, _, files in os.walk(music_root):
+            if (fname := f".{arg}.label-all-except") in files:
+                result_apply_default = result.update
+                result_apply_exception = result.difference_update
+            elif (fname := f".{arg}.label-none-except") in files:
+                result_apply_default = result.difference_update
+                result_apply_exception = result.update
+            else:
+                continue
             label_found = True
-            tag_file_dir = tag_file.relative_to(music_root).parent
-            key, given_list = tag_file_content.popitem()
-            assert len(tag_file_content) == 0
-            if key == "all_except":
-                result |= all_tracks_by_path[tag_file_dir]
-                if given_list is not None:
-                    for p in given_list:
-                        result -= all_tracks_by_path[tag_file_dir / p]
-            elif key == "none_except":
-                result -= all_tracks_by_path[tag_file_dir]
-                if given_list is not None:
-                    for p in given_list:
-                        result |= all_tracks_by_path[tag_file_dir / p]
+            current_dir = pathlib.Path(current_dir)
+            current_dir_rel = current_dir.relative_to(music_root)
+            result_apply_default(all_tracks_by_path[current_dir_rel])
+            with open(current_dir / fname) as f:
+                for line in f:
+                    line = line.rstrip()
+                    if line:
+                        result_apply_exception(all_tracks_by_path[current_dir_rel / line])
+
         if not label_found:
-            raise LookupError(f"No file found named {yml_file_name}")
+            raise LookupError(f"No file found for label {repr(arg)}")
         return frozenset(result)
 
 
