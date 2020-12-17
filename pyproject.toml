@@ -1,0 +1,20 @@
+[tool.poetry]
+name = "mpdspl"
+version = "0.1.0"
+description = "MPD smart playlist writer"
+authors = ["David Hoyes <dphoyes@gmail.com>"]
+license = "GPL-3.0-only"
+
+[tool.poetry.dependencies]
+python = "^3.9"
+pyyaml = "^5.3.1"
+python-mpd2 = "^2.0.1"
+
+[tool.poetry.dev-dependencies]
+
+[tool.poetry.scripts]
+mpdspl = 'mpdspl:main'
+
+[build-system]
+requires = ["poetry>=0.12"]
+build-backend = "poetry.masonry.api"
