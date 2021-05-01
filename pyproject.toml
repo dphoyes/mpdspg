@@ -1,7 +1,7 @@
 [tool.poetry]
-name = "mpdspl"
+name = "mpdspg"
 version = "0.1.0"
-description = "MPD smart playlist writer"
+description = "MPD stored playlist generator"
 authors = ["David Hoyes <dphoyes@gmail.com>"]
 license = "GPL-3.0-only"
 
@@ -13,7 +13,7 @@ python-mpd2 = "^2.0.1"
 [tool.poetry.dev-dependencies]
 
 [tool.poetry.scripts]
-mpdspl = 'mpdspl:main'
+mpdspg = 'mpdspg:main'
 
 [build-system]
 requires = ["poetry>=0.12"]
