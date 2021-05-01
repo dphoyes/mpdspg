@@ -2,12 +2,13 @@
 
 import os
 import argparse
-import yaml
 import pathlib
 import collections
 import functools
 import typing
 import mpd
+
+from mpdspg.label import LabelScanner
 
 
 def execfile(filename, globals):
@@ -85,43 +86,12 @@ class GenreAccessor(DbAccessor):
 
 class LabelAccessor(DbAccessor):
     @functools.cached_property
-    def __all_tracks_by_path(self):
-        result = collections.defaultdict(list)
-        for p, i in self._map_path_to_idx.items():
-            result[p].append(i)
-            for parent in p.parents:
-                result[parent].append(i)
-        return {p: frozenset(l) for p, l in result.items()}
+    def __scanner(self):
+        music_root = pathlib.Path(self._mpd.config())
+        return LabelScanner(music_root, self._map_path_to_idx)
 
     def _lookup(self, arg):
-        result = set()
-        all_tracks_by_path = self.__all_tracks_by_path
-        music_root = pathlib.Path(self._mpd.config())
-        label_found = False
-
-        for current_dir, _, files in os.walk(music_root):
-            if (fname := f".{arg}.label-all-except") in files:
-                result_apply_default = result.update
-                result_apply_exception = result.difference_update
-            elif (fname := f".{arg}.label-none-except") in files:
-                result_apply_default = result.difference_update
-                result_apply_exception = result.update
-            else:
-                continue
-            label_found = True
-            current_dir = pathlib.Path(current_dir)
-            current_dir_rel = current_dir.relative_to(music_root)
-            result_apply_default(all_tracks_by_path[current_dir_rel])
-            with open(current_dir / fname) as f:
-                for line in f:
-                    line = line.rstrip()
-                    if line:
-                        assert '/' not in line
-                        result_apply_exception(all_tracks_by_path[current_dir_rel / line])
-
-        if not label_found:
-            raise LookupError(f"No file found for label {repr(arg)}")
-        return frozenset(result)
+        return self.__scanner.get_songs_with_label(arg)
 
 
 def parse_args():

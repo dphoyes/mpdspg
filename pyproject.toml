@@ -14,6 +14,7 @@ python-mpd2 = "^2.0.1"
 
 [tool.poetry.scripts]
 mpdspg = 'mpdspg:main'
+mpdspg-label = 'mpdspg.label_cmd:main'
 
 [build-system]
 requires = ["poetry>=0.12"]
