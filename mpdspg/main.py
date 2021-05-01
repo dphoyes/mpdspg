@@ -116,6 +116,7 @@ class LabelAccessor(DbAccessor):
                 for line in f:
                     line = line.rstrip()
                     if line:
+                        assert '/' not in line
                         result_apply_exception(all_tracks_by_path[current_dir_rel / line])
 
         if not label_found:
