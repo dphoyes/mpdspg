@@ -1,12 +1,11 @@
 #!/usr/bin/env python3
 
-import os
 import argparse
 import pathlib
-import collections
 import functools
 import typing
 import mpd
+import time
 
 from mpdspg.label import LabelScanner
 
@@ -148,7 +147,17 @@ def generate_all(exec_file: pathlib.Path, m: mpd.MPDClient):
 def main():
     args = parse_args()
     m = mpd.MPDClient()
+    while True:
+        try:
+            run_until_disconnect(args, m)
+        except (mpd.ConnectionError, ConnectionError) as e:
+            print(f"ConnectionError ({repr(type(e))})")
+            time.sleep(5)
+
+
+def run_until_disconnect(args, m):
     m.connect(args.mpd)
+    print("Connected")
     m.tagtypes("clear")
 
     while True:
