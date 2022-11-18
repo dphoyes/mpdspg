@@ -6,10 +6,10 @@ from mpdspg.label import LabelScanner, LabelFilenamePair, NonExistingLabelError
 
 
 def main():
-    Cmd().main()
+    Main().main()
 
 
-class Cmd:
+class Main:
     def main(self):
         parser = self.arg_parser()
         self.args = args = parser.parse_args()
@@ -27,39 +27,47 @@ class Cmd:
 
         sp = subparsers.add_parser('list-labels')
         sp.add_argument("path", nargs='?')
-        sp.set_defaults(func=lambda: self.list_labels(self.args.path))
+        sp.set_defaults(func=lambda: self.Cmd().list_labels(self.args.path))
 
         sp = subparsers.add_parser('list-songs')
         sp.add_argument("label_name")
         sp.add_argument("path", nargs='?')
-        sp.set_defaults(func=lambda: self.list_songs(self.args.label_name, self.args.path))
+        sp.set_defaults(func=lambda: self.Cmd().list_songs(self.args.label_name, self.args.path))
 
         sp = subparsers.add_parser('exists')
         sp.add_argument("label_name")
-        sp.set_defaults(func=lambda: exit(not self.exists(self.args.label_name)))
+        sp.set_defaults(func=lambda: exit(not self.Cmd().exists(self.args.label_name)))
 
         sp = subparsers.add_parser('has')
         sp.add_argument("label_name")
         sp.add_argument("song_uid", nargs='?')
-        sp.set_defaults(func=lambda: exit(not self.has(self.args.label_name, self.args.song_uid)))
+        sp.set_defaults(func=lambda: exit(not self.Cmd().has(self.args.label_name, self.args.song_uid)))
 
         sp = subparsers.add_parser('add')
         sp.add_argument("label_name")
         sp.add_argument("song_uid")
         sp.add_argument("--new", "-n", action="store_true")
-        sp.set_defaults(func=lambda: self.add(self.args.label_name, self.args.song_uid, self.args.new))
+        sp.set_defaults(func=lambda: self.Cmd().add(self.args.label_name, self.args.song_uid, self.args.new))
 
         sp = subparsers.add_parser('remove')
         sp.add_argument("label_name")
         sp.add_argument("song_uid")
-        sp.set_defaults(func=lambda: self.remove(self.args.label_name, self.args.song_uid))
+        sp.set_defaults(func=lambda: self.Cmd().remove(self.args.label_name, self.args.song_uid))
 
         return parser
+
+    def Cmd(self):
+        return Cmd(mpd=self.args.mpd)
+
+
+class Cmd:
+    def __init__(self, mpd):
+        self._mpd = mpd
 
     @functools.cached_property
     def music_root(self):
         m = mpd.MPDClient()
-        m.connect(self.args.mpd)
+        m.connect(self._mpd)
         return pathlib.Path(m.config()).resolve()
 
     @functools.cached_property
@@ -68,7 +76,7 @@ class Cmd:
 
     def all_songs_in(self, in_):
         m = mpd.MPDClient()
-        m.connect(self.args.mpd)
+        m.connect(self._mpd)
         in_ = self.make_path_relative(in_)
         all_ = m.listall('' if in_==pathlib.Path('.') else in_)
         return sorted(pathlib.Path(obj['file']) for obj in all_ if 'file' in obj)
