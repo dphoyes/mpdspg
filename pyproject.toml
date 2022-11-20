@@ -9,6 +9,7 @@ license = "GPL-3.0-only"
 python = "^3.9"
 pyyaml = "^6.0"
 python-mpd2 = { git = "https://github.com/Mic92/python-mpd2.git", rev = "6559585720ea69b30523935bb7503e2bd8c99973" }
+aiohttp = "^3.8.3"
 
 [tool.poetry.dev-dependencies]
 
