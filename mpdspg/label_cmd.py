@@ -56,13 +56,17 @@ class Main:
 
         return parser
 
-    def Cmd(self):
-        return Cmd(mpd=self.args.mpd)
+    def Cmd(self, log=None):
+        return Cmd(mpd=self.args.mpd, print_file=log)
 
 
 class Cmd:
-    def __init__(self, mpd):
+    def __init__(self, mpd, print_file=None):
         self._mpd = mpd
+        self._print_file = print_file
+
+    def print(self, *args, **kwargs):
+        print(*args, **kwargs, file=self._print_file)
 
     @functools.cached_property
     def music_root(self):
@@ -103,7 +107,7 @@ class Cmd:
         else:
             labels = LabelScanner(self.music_root, self.all_songs_in(path), allow_missing=True).get_nonempty_labels()
         for s in sorted(labels):
-            print(s)
+            self.print(s)
 
     def list_songs(self, label, path=None):
         if path is None:
@@ -111,7 +115,7 @@ class Cmd:
         else:
             scanner = LabelScanner(self.music_root, self.all_songs_in(path), allow_missing=True)
         for s in sorted(scanner.get_songs_with_label(label)):
-            print(s)
+            self.print(s)
 
     def exists(self, label_name):
         scanner = LabelScanner(self.music_root, {})
@@ -126,11 +130,11 @@ class Cmd:
         abspath = self.make_path_absolute(path)
         if abspath.is_dir():
             if not new and not self.exists(label_name):
-                print(f"Label {label_name} doesn't exist")
+                self.print(f"Label {label_name} doesn't exist")
                 exit(1)
             (abspath/fnames.none_except).unlink(missing_ok=True)
             (abspath/fnames.all_except).write_text("")
-            print(f"Added label {label_name} to {repr(path)}")
+            self.print(f"Added label {label_name} to {repr(path)}")
         else:
             assert abspath.is_file()
             try:
@@ -139,10 +143,10 @@ class Cmd:
                 if new:
                     already_has_label = False
                 else:
-                    print(f"Label {label_name} doesn't exist")
+                    self.print(f"Label {label_name} doesn't exist")
                     exit(1)
             if already_has_label:
-                print(f"Label {label_name} was already added to {repr(path)}")
+                self.print(f"Label {label_name} was already added to {repr(path)}")
             else:
                 none_except = abspath.parent/fnames.none_except
                 all_except = abspath.parent/fnames.all_except
@@ -150,27 +154,27 @@ class Cmd:
                     remove_line_from_file(all_except, abspath.name)
                 else:
                     add_line_to_file(none_except, abspath.name)
-                print(f"Added label {label_name} to {repr(path)}")
+                self.print(f"Added label {label_name} to {repr(path)}")
 
     def remove(self, label_name, path):
         fnames = LabelFilenamePair(label_name)
         abspath = self.make_path_absolute(path)
         if abspath.is_dir():
             if not self.exists(label_name):
-                print(f"Label {label_name} doesn't exist")
+                self.print(f"Label {label_name} doesn't exist")
                 exit(1)
             (abspath/fnames.all_except).unlink(missing_ok=True)
             (abspath/fnames.none_except).write_text("")
-            print(f"Removed label {label_name} from {repr(path)}")
+            self.print(f"Removed label {label_name} from {repr(path)}")
         else:
             assert abspath.is_file()
             try:
                 already_has_not_label = not self.has(label_name, path)
             except NonExistingLabelError:
-                print(f"Label {label_name} doesn't exist")
+                self.print(f"Label {label_name} doesn't exist")
                 exit(1)
             if already_has_not_label:
-                print(f"Label {label_name} was already removed from {repr(path)}")
+                self.print(f"Label {label_name} was already removed from {repr(path)}")
             else:
                 none_except = abspath.parent/fnames.none_except
                 all_except = abspath.parent/fnames.all_except
@@ -178,7 +182,7 @@ class Cmd:
                     remove_line_from_file(none_except, abspath.name)
                 else:
                     add_line_to_file(all_except, abspath.name)
-                print(f"Removed label {label_name} from {repr(path)}")
+                self.print(f"Removed label {label_name} from {repr(path)}")
 
 
 def add_line_to_file(filepath, line):
