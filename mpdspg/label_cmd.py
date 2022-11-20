@@ -1,3 +1,4 @@
+import os
 import argparse
 import pathlib
 import mpd
@@ -57,10 +58,59 @@ class Main:
         sp.add_argument("song_uid")
         sp.set_defaults(func=lambda: self.Cmd().remove(self.args.label_name, self.args.song_uid))
 
+        sp = subparsers.add_parser('webserver')
+        sp.add_argument("path")
+        sp.set_defaults(func=lambda: self.run_webserver(self.args.path))
+
         return parser
 
     def Cmd(self, log=None):
         return Cmd(mpd=self.args.mpd, print_file=log)
+
+    def run_webserver(self, path):
+        import functools
+        import socket
+        from aiohttp import web
+        from io import StringIO
+
+        def cmd_handler(f):
+            @functools.wraps(f)
+            async def wrapped(request):
+                log = StringIO()
+                try:
+                    await f(request, self.Cmd(log))
+                except InvalidCmdError as e:
+                    raise web.HTTPNotFound(text=log.getvalue()) from e
+                return web.Response(text=log.getvalue())
+            return wrapped
+
+        routes = web.RouteTableDef()
+
+        @routes.get('/list-labels')
+        @cmd_handler
+        async def list_labels(request, cmd):
+            cmd.list_labels(request.rel_url.query.get("path"))
+
+        @routes.post('/add')
+        @cmd_handler
+        async def add(request, cmd):
+            data = await request.post()
+            cmd.add(data["label"], data["path"], new=False)
+
+        @routes.post('/remove')
+        @cmd_handler
+        async def remove(request, cmd):
+            data = await request.post()
+            cmd.remove(data["label"], data["path"])
+
+        s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+        os.unlink(path)
+        s.bind(path)
+        os.chmod(path, 0o660)
+
+        app = web.Application()
+        app.add_routes(routes)
+        web.run_app(app, sock=s)
 
 
 class InvalidCmdError(Exception):
