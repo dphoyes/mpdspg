@@ -94,18 +94,20 @@ class Cmd:
 
     def make_path_relative(self, path):
         if path is not None:
-            path = pathlib.Path(path)
-            if path.is_absolute():
-                path = path.resolve().relative_to(self.music_root)
+            path = self.make_path_absolute(path).relative_to(self.music_root)
         return path
 
     def make_path_absolute(self, path):
         if path is not None:
-            path = pathlib.Path(path)
-            if path.is_absolute():
-                path = path.resolve()
-            else:
-                path = self.music_root/path
+            valid = True
+            try:
+                path = (self.music_root/path).resolve(strict=True)
+            except FileNotFoundError:
+                valid = False
+            valid = valid and (self.music_root in path.parents)
+            if not valid:
+                self.print(f"Invalid song path {path!r}")
+                raise InvalidCmdError
         return path
 
     def list_labels(self, path=None):
