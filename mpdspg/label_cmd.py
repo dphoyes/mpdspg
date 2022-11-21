@@ -18,7 +18,10 @@ class Main:
         except KeyError:
             parser.print_help()
             raise SystemExit(1)
-        func()
+        try:
+            func()
+        except InvalidCmdError:
+            exit(1)
 
     def arg_parser(self):
         parser = argparse.ArgumentParser()
@@ -58,6 +61,10 @@ class Main:
 
     def Cmd(self, log=None):
         return Cmd(mpd=self.args.mpd, print_file=log)
+
+
+class InvalidCmdError(Exception):
+    pass
 
 
 class Cmd:
@@ -131,7 +138,7 @@ class Cmd:
         if abspath.is_dir():
             if not new and not self.exists(label_name):
                 self.print(f"Label {label_name} doesn't exist")
-                exit(1)
+                raise InvalidCmdError
             (abspath/fnames.none_except).unlink(missing_ok=True)
             (abspath/fnames.all_except).write_text("")
             self.print(f"Added label {label_name} to {repr(path)}")
@@ -144,7 +151,7 @@ class Cmd:
                     already_has_label = False
                 else:
                     self.print(f"Label {label_name} doesn't exist")
-                    exit(1)
+                    raise InvalidCmdError
             if already_has_label:
                 self.print(f"Label {label_name} was already added to {repr(path)}")
             else:
@@ -162,7 +169,7 @@ class Cmd:
         if abspath.is_dir():
             if not self.exists(label_name):
                 self.print(f"Label {label_name} doesn't exist")
-                exit(1)
+                raise InvalidCmdError
             (abspath/fnames.all_except).unlink(missing_ok=True)
             (abspath/fnames.none_except).write_text("")
             self.print(f"Removed label {label_name} from {repr(path)}")
@@ -172,7 +179,7 @@ class Cmd:
                 already_has_not_label = not self.has(label_name, path)
             except NonExistingLabelError:
                 self.print(f"Label {label_name} doesn't exist")
-                exit(1)
+                raise InvalidCmdError
             if already_has_not_label:
                 self.print(f"Label {label_name} was already removed from {repr(path)}")
             else:
