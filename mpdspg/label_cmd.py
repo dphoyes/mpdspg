@@ -104,7 +104,10 @@ class Main:
             cmd.remove(data["label"], data["path"])
 
         s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
-        os.unlink(path)
+        try:
+            os.unlink(path)
+        except FileNotFoundError:
+            pass
         s.bind(path)
         os.chmod(path, 0o660)
 
