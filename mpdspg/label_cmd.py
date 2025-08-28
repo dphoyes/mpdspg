@@ -132,7 +132,7 @@ class Cmd:
     def music_root(self):
         m = mpd.MPDClient()
         m.connect(self._mpd)
-        return pathlib.Path(m.config()).resolve()
+        return pathlib.Path(m.config()['music_directory']).resolve()
 
     @functools.cached_property
     def all_songs(self):

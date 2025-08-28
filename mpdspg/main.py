@@ -86,7 +86,7 @@ class GenreAccessor(DbAccessor):
 class LabelAccessor(DbAccessor):
     @functools.cached_property
     def __scanner(self):
-        music_root = pathlib.Path(self._mpd.config())
+        music_root = pathlib.Path(self._mpd.config()['music_directory'])
         return LabelScanner(music_root, self._map_path_to_idx)
 
     def _lookup(self, arg):
